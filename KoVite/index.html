@@ -7,8 +7,14 @@
 			<label>Name</label>
 			<span data-bind="text: name"></span>
 		</div>
+		
+		<hr>
+		<div>
+			<h2>Component</h2>
+			<div data-bind="component: { name: 'color-panel', params: {} }"></div>
+		</div>
 	
-		<script src="src/knockout-x.js"></script>
+		<script src="src/knockout-x.debug.js"></script>
 		<script type="module" src="src/testPage.js"></script>
 	</body>
 </html>
