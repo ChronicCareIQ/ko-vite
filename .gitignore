@@ -1,0 +1,15 @@
+*~
+*.suo
+*.user
+*.userprefs
+.*.swp
+*.csproj.DotSettings
+.idea
+.vs
+.vscode
+output/
+bin/
+KoVite/node_modules/
+obj/
+.out/
+/global.json
