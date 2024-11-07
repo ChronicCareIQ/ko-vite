@@ -1,4 +1,5 @@
 import {ComponentDefinition} from "./ko-component.js";
+import template from "./colorPanel.html?raw";
 
 export class ColorPanel
 {
@@ -18,9 +19,4 @@ export class ColorPanel
     set color(value) { this.#color(value); }
 }
 
-const tmpTemplate = '<div>\n' +
-    '    <label>Color</label>\n' +
-    '    <span data-bind="text: color"></span>\n' +
-    '</div>';
-
-ComponentDefinition.register(ColorPanel, tmpTemplate);
+ComponentDefinition.register(ColorPanel, template);
