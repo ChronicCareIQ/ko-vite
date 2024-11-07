@@ -1,4 +1,4 @@
-import {ComponentDefinition} from "./ko-component.js";
+import {ComponentDefinition} from "./ko-modules/ko-component-definition.js";
 import template from "./colorPanel.html?raw";
 
 export class ColorPanel

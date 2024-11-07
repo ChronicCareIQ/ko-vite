@@ -1,0 +1,17 @@
+<div data-bind="attach: true">
+    <h2>KO Test</h2>
+    Get moving boy
+    <hr>
+    <div>
+        <label>Name</label>
+        <span data-bind="text: name"></span>
+    </div>
+
+    <hr>
+    <div>
+        <h2>Component</h2>
+        <div data-bind="component: { name: 'color-panel', params: { color: 'organ' } }"></div>
+        <color-panel params="color: 'blue'"></color-panel>
+        <div data-bind="component: { name: 'color-panel', params: myColorPanel }"></div>
+    </div>
+</div>
