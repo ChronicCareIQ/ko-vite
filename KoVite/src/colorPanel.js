@@ -1,4 +1,4 @@
-import {KoModule} from "./ko-module";
+import {ComponentDefinition} from "./ko-component.js";
 
 export class ColorPanel
 {
@@ -11,7 +11,7 @@ export class ColorPanel
     constructor(params)
     {
         params = params ?? {};
-        this.#color = ko.observable(params.color ?? 'Brown');
+        this.#color = ko.observable(params.color ?? 'Default Color');
     }
     
     get color() { return this.#color(); }
@@ -23,4 +23,4 @@ const tmpTemplate = '<div>\n' +
     '    <span data-bind="text: color"></span>\n' +
     '</div>';
 
-KoModule.register(ColorPanel, tmpTemplate);
+ComponentDefinition.register(ColorPanel, tmpTemplate);

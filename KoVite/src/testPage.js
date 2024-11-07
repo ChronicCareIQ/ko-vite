@@ -6,6 +6,7 @@ export class TestPage
     {
         this.name = ko.observable('Eric');
         
+        this.myColorPanel = new ColorPanel({ color: 'Red - From JS' });
     }
 }
 

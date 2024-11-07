@@ -11,7 +11,9 @@
 		<hr>
 		<div>
 			<h2>Component</h2>
-			<div data-bind="component: { name: 'color-panel', params: {} }"></div>
+			<div data-bind="component: { name: 'color-panel', params: { color: 'organ' } }"></div>
+			<color-panel params="color: 'blue'"></color-panel>
+			<div data-bind="component: { name: 'color-panel', params: myColorPanel }"></div>
 		</div>
 	
 		<script src="src/knockout-x.debug.js"></script>
