@@ -1,4 +1,3 @@
-import {Reference} from "./ko-reference.js";
 import {ComponentDefinition} from "./ko-component-definition.js";
 
 class RootModule
@@ -44,9 +43,31 @@ export class PageLoader
         this.dialogs = ko.observableArray([]);
         this.headers = ko.observableArray([]);
         this.footers = ko.observableArray([]);
-        this.ref = new Reference(null).setOptions({ completedCallback: () => this.#onRefCompleted(), componentName: 'page.loader' });
-        this.attached = () => this.ref;
         this.rootModule = new RootModule();
+    }
+    
+    setLoadedCallback(callback)
+    {
+        this.#loadedCallback = callback;
+    }
+
+    /**
+     * @param options {Object}
+     * @param [options.headLess] {boolean} If true, the loader is not bound to KO
+     * @return {PageLoader} Returns this instance
+     */
+    setOptions(options)
+    {
+        if (options.headLess) this.ref.attached(this);      // loader isn't bound using KO
+        if (typeof options.verbose !== "undefined") 
+        {
+            let toSet = !!options.verbose;
+            PageLoader.verbose = toSet;
+            ComponentDefinition.verbose = toSet;
+        }
+        if (typeof options.loadedCallback === "function") this.#loadedCallback = options.loadedCallback;
+        if (typeof options.popState === "boolean") this.#popState = options.popState;
+        return this;
     }
     
     static buildLoader()
@@ -59,11 +80,16 @@ export class PageLoader
     }
 
     /**
-     * @param definition {ComponentDefinition}
+     * Sets all global / static components to the loader. Call this method after all components have been registered.
      */
-    static register(definition)
+    static setComponentsToLoader()
     {
-        PageLoader.instance.addComponent(definition);   
+        let loader = PageLoader.instance;
+        let definitions = Array.from(ComponentDefinition.componentDefinitions.values());
+        definitions.forEach(definition => loader.#addComponent(definition));
+
+        if (loader.root() === undefined)
+            throw 'Root component not set';
     }
 
     /**
@@ -71,7 +97,7 @@ export class PageLoader
      * 
      * @param definition {ComponentDefinition}
      */
-    addComponent(definition)
+    #addComponent(definition)
     {
         let autoBind = definition.autoBind;
         
@@ -105,6 +131,7 @@ export class PageLoader
             
             this.root(bindingObject);
 
+            document.addEventListener('ko.component.definition:loaded', () => this.#doLoaded());
             document.addEventListener('DOMContentLoaded', () => ko.applyBindings(this));
         }
         else if (autoBind.dialog && this.dialogs.find(x => x.name === bindingObject.name) === undefined)
@@ -130,34 +157,7 @@ export class PageLoader
         return aSortIndex - bSortIndex;
     }
 
-    onComponentAttached(viewModel, ref)
-    {
-        /*
-        let name = viewModel.constructor.name;
-        name = ComponentDefinition.camelCaseToDash(name);
-    
-        let component = findComponent(name);
-        if (!component && verbose && this.components().length) console.log('Component not found. Ignoring attached event for component ' + name);
-        if (!component) return;
-    
-        component.isLoaded = true;
-        component.viewModel = viewModel;
-        if (PageLoader.verbose) console.log('Loaded component ' + name + '\tOutstanding ' + retrieveOutstanding().join());
-        if (ref && !ref.componentName) ref.setComponentName(name);       
-         */
-    }
-
-    #onRefCompleted()
-    {
-        if (PageLoader.verbose) console.log('Reference counts are completed');
-    
-        if (!this.loading()) return;
-    
-        if (PageLoader.verbose) console.log('All loaded');
-        window.setTimeout(() => this.doLoaded, 0);     // assures loading is done by putting at back of call queue            
-    }
-
-    doLoaded()
+    #doLoaded()
     {
         this.loading(false);                                // makes visible before callback
         if (PageLoader.verbose) console.log('Page ready');
@@ -181,37 +181,6 @@ export class PageLoader
             this.handlePopState(null, this.getJsonFromUrl(), this.ref);
         }
         if (PageLoader.verbose) console.log('Page popState');
-    }
-
-/*
-    function retrieveOutstanding()
-{
-    let result = [];
-    let components = this.components();
-    for (let i = 0; i < components.length; i++)
-        if (!components[i].isLoaded && !components[i].noWait)
-            result.push(components[i].name);
-    return result;
-}
-*/
-    
-    setLoadedCallback(callback)
-    {
-        this.#loadedCallback = callback;
-    }
-
-    /**
-     * @param options {Object}
-     * @param [options.headLess] {boolean} If true, the loader is not bound to KO
-     * @return {PageLoader} Returns this instance
-     */
-    setOptions(options)
-    {
-        if (options.headLess) this.ref.attached(this);      // loader isn't bound using KO
-        if (typeof options.verbose !== "undefined") PageLoader.verbose = options.verbose ? true : false;
-        if (typeof options.loadedCallback === "function") this.#loadedCallback = options.loadedCallback;
-        if (typeof options.popState === "boolean") this.#popState = options.popState;
-        return this;
     }
     
     #registerPopstate()
@@ -283,30 +252,4 @@ export class PageLoader
     }    
 }
 
-function attachedInit(element, valueAccessor, allBindings, viewModel)
-{
-    if (valueAccessor() === 'parent')
-        element = element.parentNode;
-
-    let ref;
-    if (viewModel.attached)
-        ref = viewModel.attached(element);  // calls component's attached method
-
-    if (ref && ref !== PageLoader.instance.ref)
-        PageLoader.instance.onComponentAttached(viewModel, ref);  // internally tracks outstanding components
-
-    if (ref && ref instanceof Reference)
-        ref.attached(viewModel);    // updates reference counts
-}
-
-function attachedHandlerInit(element, valueAccessor)
-{
-    let handler = valueAccessor();
-    handler(element);
-}
-
 PageLoader.buildLoader();
-
-ko.bindingHandlers.attached = { init: attachedInit };
-ko.bindingHandlers.attachedHandler = { init: attachedHandlerInit };
-ko.extenders.ref = function (target, option) { target.ref = option; return target; };

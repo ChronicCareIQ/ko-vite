@@ -9,11 +9,9 @@ export class ComponentDefinition
      * @type {Map<string, ComponentDefinition>} Map of component definitions, keyed by component name 
      */
     static componentDefinitions = new Map();
-
-    /**
-     * @type {function|null} Function to register components with the page loader
-     */
-    static pageLoaderRegister = null;
+    
+    /** @type {boolean} Flag to determine if verbose logging is enabled */
+    static verbose;
     
     /** @type {string} Name of the module */
     name;
@@ -27,6 +25,12 @@ export class ComponentDefinition
      * @type {AutoBind|null} Settings used by the page loader to automatically bind an instance of component
      */
     autoBind;
+    
+    /** @type {number} Counts the number of instances created bound via the KO `component` binding */
+    instances = 0;
+    
+    /** @type {number} Counts the number of instances attached via the `attached` binding */
+    attached = 0;
     
     /**
      * @param name {String} Component's name
@@ -48,8 +52,18 @@ export class ComponentDefinition
      */
     createViewModel(params, componentInfo)
     {
+        this.instances++;
+        
         if (params instanceof this.viewModelClass)
+        {
+            if (ComponentDefinition.verbose)
+                console.log(`Using passed instance of ${this.name} as part of component binding`);
+
             return params;
+        }
+
+        if (ComponentDefinition.verbose)
+            console.log(`Creating new instance of ${this.name} as part of component binding`);
         
         let instance = new this.viewModelClass(params);
         return instance;
@@ -85,19 +99,59 @@ export class ComponentDefinition
             template: template
         });
         
-        if (ComponentDefinition.pageLoaderRegister)
-            ComponentDefinition.pageLoaderRegister(definition);
-        
-        console.log('Registered component ' + name);
+        if (ComponentDefinition.verbose)
+            console.log('Registered component ' + name);
     }
 
     /**
      * Creates an object suitable for passing to the KO `component` binding
-     * @returns {{name: string, params: Object}}
+     * @returns {{name: string, params: Object, sortIndex: number|null}}
      */
     createBindingObject()
     {
         return { name: this.name, params: this.autoBind.params, sortIndex: this.autoBind.sortIndex };
+    }
+
+    /**
+     * @returns {boolean} Returns true if there are outstanding instances that have not been attached
+     */
+    hasOutstanding()
+    {
+        return this.instances > this.attached;
+    }
+
+    /**
+     * Checks whether all instances have been attached, and triggers a 'ko.component.definition:loaded' event if they have
+     */
+    static checkIfComplete()
+    {
+        // Checks if all instances have been attached
+        let components = Array.from(ComponentDefinition.componentDefinitions.values());
+        let waiting = components.find(definition => definition.hasOutstanding());
+        if (waiting)
+            return;
+
+        if (ComponentDefinition.verbose)
+            console.log('All components have been attached. Triggered event: ko.component.definition:loaded');
+        
+        let event = new CustomEvent('ko.component.definition:loaded', { detail: true });
+        document.dispatchEvent(event);
+    }
+    
+    /**
+     * Updates attached counters and checks whether all instances have been attached
+     */
+    addAttached()
+    {
+        this.attached++;
+        
+        if (ComponentDefinition.verbose)
+            console.log(`Attached instance of ${this.name} with attached=${this.attached} of instances=${this.instances}`);
+        
+        if (this.attached !== this.instances)
+            return;
+
+        ComponentDefinition.checkIfComplete();
     }
 
     static camelCaseToDash(text)
@@ -115,5 +169,30 @@ export class ComponentDefinition
             last = x;
         }
         return result;
-    }    
+    }
+    
+    static doAttached(element, valueAccessor, allBindings, viewModel)
+    {
+        if (valueAccessor() === 'parent')
+            element = element.parentNode;
+
+        let componentName = ComponentDefinition.camelCaseToDash(viewModel.constructor.name);
+        if (!ComponentDefinition.componentDefinitions.has(componentName))
+            throw `Component ${componentName} not registered prior to using the 'attached' binding`;
+
+        if (viewModel.attached)
+            viewModel.attached(element);  // calls component's attached method
+        
+        let definition = ComponentDefinition.componentDefinitions.get(componentName);
+        definition.addAttached();
+    }
+    
+    static doAttachedHandler(element)
+    {
+        let handler = valueAccessor();
+        handler(element);
+    }
 }
+
+ko.bindingHandlers.attached = { init: ComponentDefinition.doAttached };
+ko.bindingHandlers.attachedHandler = { init: ComponentDefinition.doAttachedHandler };

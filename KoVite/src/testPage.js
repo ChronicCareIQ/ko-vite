@@ -13,4 +13,6 @@ export class TestPage
     }
 }
 
-ComponentDefinition.register(TestPage, template);
+ComponentDefinition.verbose = true;
+ComponentDefinition.register(TestPage, template, { root: true });
+PageLoader.setComponentsToLoader();

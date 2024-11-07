@@ -11,9 +11,9 @@ export class Reference
     #subscriptions = [];
 
     /**
-     * @param parent {Reference} Parent reference
+     * @param [parent] {Reference|null} Parent reference. Defaults to `null`
      */
-    constructor(parent) 
+    constructor(parent = null) 
     {
         this.#parent = parent;
         this.#completedCallback = ko.observable(this);
