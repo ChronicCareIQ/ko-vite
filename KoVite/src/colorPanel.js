@@ -1,7 +1,7 @@
-import {ComponentDefinition} from "./ko-modules/ko-component-definition.js";
 import template from "./colorPanel.html?raw";
+import {Component} from "./ko-modules/ko-component";
 
-export class ColorPanel
+export class ColorPanel extends Component
 {
     #color;
 
@@ -11,6 +11,8 @@ export class ColorPanel
      */
     constructor(params)
     {
+        super(template);
+        
         params = params ?? {};
         this.#color = ko.observable(params.color ?? 'Default Color');
     }
@@ -18,5 +20,3 @@ export class ColorPanel
     get color() { return this.#color(); }
     set color(value) { this.#color(value); }
 }
-
-ComponentDefinition.register(ColorPanel, template);

@@ -9,6 +9,12 @@ export class ComponentDefinition
      * @type {Map<string, ComponentDefinition>} Map of component definitions, keyed by component name 
      */
     static componentDefinitions = new Map();
+
+    /**
+     * @type {boolean} Tracks when all component definitions have been loaded to prevent subsequent 
+     * loading of components from triggering the initial load event.
+     */
+    static #hasLoaded = false
     
     /** @type {boolean} Flag to determine if verbose logging is enabled */
     static verbose;
@@ -52,9 +58,8 @@ export class ComponentDefinition
      */
     createViewModel(params, componentInfo)
     {
-        this.instances++;
-        
-        if (params instanceof this.viewModelClass)
+        // Verifies that object is an instance of the class
+        if (params.componentDefinition === this)
         {
             if (ComponentDefinition.verbose)
                 console.log(`Using passed instance of ${this.name} as part of component binding`);
@@ -62,19 +67,49 @@ export class ComponentDefinition
             return params;
         }
 
+        throw `Component '${this.name}' requires an instance of ${this.viewModelClass.name} to be passed as a parameter`;
+    }
+
+    /**
+     * Tracks the number of instances created and returns a unique ID for instance
+     * @returns {String} Unique ID for instance
+     */
+    trackInstance()
+    {
+        this.instances++;
         if (ComponentDefinition.verbose)
-            console.log(`Creating new instance of ${this.name} as part of component binding`);
+            console.log(`Created instance of ${this.name} with ${this.instances} total instances`);
         
-        let instance = new this.viewModelClass(params);
-        return instance;
+        return `$[this.name}-${this.instances}`;
+    }
+
+    /**
+     * @param instance {object} Instance of a component to register
+     * @param template {string} HTML template, as a string, associated with this component
+     * @param [autoBind] {AutoBind} Optional AutoBind object to use for registration
+     * @returns {ComponentDefinition} Returns the component definition object
+     */
+    static registerInstance
+    (
+        instance,
+        template,
+        autoBind
+    ) 
+    {
+        let name = ComponentDefinition.camelCaseToDash(instance.constructor.name);
+        if (ComponentDefinition.componentDefinitions.has(name))
+            return ComponentDefinition.componentDefinitions.get(name);
+        
+        return ComponentDefinition.registerClass(instance.constructor, template, autoBind);
     }
     
     /**
      * @param viewModelClass {function, Class} Class/function to register for any instance of component
      * @param template {string} HTML template, as a string, associated with this component
      * @param [autoBind] {AutoBind} Optional AutoBind object to use for registration
+     * @returns {ComponentDefinition} Returns the component definition object
      */
-    static register
+    static registerClass
     (
         viewModelClass,
         template,
@@ -101,15 +136,8 @@ export class ComponentDefinition
         
         if (ComponentDefinition.verbose)
             console.log('Registered component ' + name);
-    }
-
-    /**
-     * Creates an object suitable for passing to the KO `component` binding
-     * @returns {{name: string, params: Object, sortIndex: number|null}}
-     */
-    createBindingObject()
-    {
-        return { name: this.name, params: this.autoBind.params, sortIndex: this.autoBind.sortIndex };
+        
+        return definition;
     }
 
     /**
@@ -130,12 +158,27 @@ export class ComponentDefinition
         let waiting = components.find(definition => definition.hasOutstanding());
         if (waiting)
             return;
-
-        if (ComponentDefinition.verbose)
-            console.log('All components have been attached. Triggered event: ko.component.definition:loaded');
         
-        let event = new CustomEvent('ko.component.definition:loaded', { detail: true });
-        document.dispatchEvent(event);
+        // Checks if this is trigger for new components
+        if (ComponentDefinition.#hasLoaded)
+        {
+            if (ComponentDefinition.verbose)
+                console.log('New components have been attached. Triggered event: ko.component.definition:new-loaded');
+
+            let event = new CustomEvent('ko.component.definition:new-loaded', { detail: true });
+            document.dispatchEvent(event);
+        }
+        // Initial loading of page's components
+        else
+        {
+            ComponentDefinition.#hasLoaded = true;
+            
+            if (ComponentDefinition.verbose)
+                console.log('All components have been attached. Triggered event: ko.component.definition:loaded');
+
+            let event = new CustomEvent('ko.component.definition:loaded', { detail: true });
+            document.dispatchEvent(event);
+        }
     }
     
     /**

@@ -1,4 +1,5 @@
 import {ComponentDefinition} from "./ko-component-definition.js";
+import {Component} from "./ko-component.js";
 
 class RootModule
 {
@@ -54,6 +55,9 @@ export class PageLoader
     /**
      * @param options {Object}
      * @param [options.headLess] {boolean} If true, the loader is not bound to KO
+     * @param [options.verbose] {boolean} If true, verbose logging is enabled
+     * @param [options.loadedCallback] {function} Callback function when all components are loaded
+     * @param [options.popState] {boolean} If true, registers for popstate events
      * @return {PageLoader} Returns this instance
      */
     setOptions(options)
@@ -81,15 +85,55 @@ export class PageLoader
 
     /**
      * Sets all global / static components to the loader. Call this method after all components have been registered.
+     * @param root {Component} Root component to set
      */
-    static setComponentsToLoader()
+    static setComponentsToLoader(root)
     {
         let loader = PageLoader.instance;
-        let definitions = Array.from(ComponentDefinition.componentDefinitions.values());
-        definitions.forEach(definition => loader.#addComponent(definition));
+        if (loader.root())
+            throw 'Root component already set: ' + loader.root().name;
+        
+        if (root == null || !root instanceof Component)
+            throw 'Root component must be a Component instance';
 
-        if (loader.root() === undefined)
-            throw 'Root component not set';
+        // Sets reference to root component
+        loader.root(root);
+        
+        let definitions = Array.from(ComponentDefinition.componentDefinitions.values());
+        definitions.forEach(definition =>
+        {
+            loader.#addCssLinks(definition);
+        });
+
+        document.addEventListener('ko.component.definition:loaded', () => loader.#doLoaded());
+        document.addEventListener('DOMContentLoaded', () => ko.applyBindings(loader));
+    }
+
+    /**
+     * Performs any automatic binding associated with CSS for passed component
+     *
+     * @param definition {ComponentDefinition}
+     */
+    #addCssLinks(definition)
+    {
+        let autoBind = definition.autoBind;
+        if (!autoBind.css)
+            return;
+        
+        let cssList = typeof autoBind.css === "string" ? [autoBind.css] : autoBind.css;
+        cssList.forEach(css =>
+        {
+            if (this.#cssLoaded.indexOf(css) >= 0)
+                return;
+
+            this.#cssLoaded.push(css);
+
+            let linkDom = document.createElement('link');
+            linkDom.setAttribute('type', 'text/css');
+            linkDom.setAttribute('href', css);
+            linkDom.setAttribute('rel', 'stylesheet');
+            document.head.appendChild(linkDom);
+        });
     }
 
     /**
@@ -100,25 +144,7 @@ export class PageLoader
     #addComponent(definition)
     {
         let autoBind = definition.autoBind;
-        
-        if (autoBind.css)
-        {
-            let cssList = typeof autoBind.css === "string" ? [autoBind.css] : autoBind.css;
-            cssList.forEach(css =>
-            {
-                if (this.#cssLoaded.indexOf(css) >= 0)
-                    return;
-
-                this.#cssLoaded.push(css);
-                
-                let linkDom = document.createElement('link');
-                linkDom.setAttribute('type', 'text/css');
-                linkDom.setAttribute('href', css);
-                linkDom.setAttribute('rel', 'stylesheet');
-                document.head.appendChild(linkDom);
-            });
-        }
-        
+      
         if (!autoBind.shouldAutoBind())
             return;
         
@@ -126,13 +152,7 @@ export class PageLoader
     
         if (autoBind.root)
         {
-            if (this.root() && this.root().name !== bindingObject.name)
-                throw 'Root component already set: ' + this.root().name;
-            
-            this.root(bindingObject);
-
-            document.addEventListener('ko.component.definition:loaded', () => this.#doLoaded());
-            document.addEventListener('DOMContentLoaded', () => ko.applyBindings(this));
+           
         }
         else if (autoBind.dialog && this.dialogs.find(x => x.name === bindingObject.name) === undefined)
         {

@@ -1,18 +1,18 @@
 import {PageLoader} from "./ko-modules/ko-page-loader.js";
-import {ComponentDefinition} from "./ko-modules/ko-component-definition.js";
+import {Component} from "./ko-modules/ko-component.js";
 import {ColorPanel} from "./colorPanel";
 import template from "./testPage.html?raw";
 
-export class TestPage
+export class TestPage extends Component
 {
     constructor()
     {
-        this.name = ko.observable('Eric');
+        super(template, { root: true });
+        this.userName = ko.observable('Eric');
         
         this.myColorPanel = new ColorPanel({ color: 'Red - From JS' });
     }
 }
 
-ComponentDefinition.verbose = true;
-ComponentDefinition.register(TestPage, template, { root: true });
-PageLoader.setComponentsToLoader();
+PageLoader.instance.setOptions({ verbose: true });
+PageLoader.setComponentsToLoader(new TestPage());
