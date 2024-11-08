@@ -1,4 +1,5 @@
 import {AutoBind} from './ko-auto-bind.js';
+import './ko-component-preprocessor.js';
 
 /**
  * Class that defines a component for Knockout
@@ -80,7 +81,7 @@ export class ComponentDefinition
         if (ComponentDefinition.verbose)
             console.log(`Created instance of ${this.name} with ${this.instances} total instances`);
         
-        return `$[this.name}-${this.instances}`;
+        return `${this.name}-${this.instances}`;
     }
 
     /**

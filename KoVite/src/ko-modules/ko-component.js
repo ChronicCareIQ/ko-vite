@@ -26,8 +26,7 @@ export class Component
         this.#componentId = this.#componentDefinition.trackInstance();
     }
  
-    get name() { return this.#componentDefinition.name; }
-    get params() { return this; }
+    get componentName() { return this.#componentDefinition.name; }
     get componentDefinition() { return this.#componentDefinition; }
     get componentId() { return this.#componentId; }
 }
