@@ -7,11 +7,13 @@ export class Component
     
     /** @type {String} Unique ID for component */
     #componentId;
+    
+    /** @type {HTMLElement} HTMLElement associated with this component as set via the `attached` binding */
+    #componentDom;
 
     /**
      * @param template {string} HTML template, as a string, associated with this component
      * @param [autoBind] {object|null}
-     * @param [autoBind.root] {boolean} Flag to determine if this component should be automatically bound to the component loader's root
      * @param [autoBind.dialog] {boolean} Flag to determine if component is a dialog, and to auto-bind to global dialog list
      * @param [autoBind.header] {boolean} Flag to determine if component is a header, and to auto-bind to headers list
      * @param [autoBind.footer] {boolean} Flag to determine if component is a header, and to auto-bind to footers
@@ -25,8 +27,23 @@ export class Component
         this.#componentDefinition = ComponentDefinition.registerInstance(this, template, autoBind)
         this.#componentId = this.#componentDefinition.trackInstance();
     }
+
+    /**
+     * Method called whenever the component uses the `attached` binding. Method can be optionally 
+     * overridden by the component to use the DOM associated with the component.
+     * 
+     * @param element {HTMLElement} HTMLElement associated with this component
+     */
+    attached(element)
+    {
+        this.#componentDom = element;
+        
+        if (ComponentDefinition.verbose)
+            console.log(`Attached method called for instance: ${this.componentId}`);
+    }
  
     get componentName() { return this.#componentDefinition.name; }
     get componentDefinition() { return this.#componentDefinition; }
     get componentId() { return this.#componentId; }
+    
 }

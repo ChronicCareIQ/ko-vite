@@ -1,5 +1,6 @@
 import template from "./colorPanel.html?raw";
 import {Component} from "./ko-modules/ko-component";
+import {Dialog} from "./dialog";
 
 export class ColorPanel extends Component
 {
@@ -15,6 +16,7 @@ export class ColorPanel extends Component
         
         params = params ?? {};
         this.#color = ko.observable(params.color ?? 'Default Color');
+        this.#color.subscribe(newColor => Dialog.instance.color(newColor));
     }
     
     get color() { return this.#color(); }

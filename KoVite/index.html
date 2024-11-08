@@ -6,6 +6,9 @@
 		<div data-bind="visible: !loading()">
 			<component instance="root"></component>
 		</div>
+		<div data-bind="foreach: dialogs">
+			<component instance="$data"></component>
+		</div>
 	
 		<script src="src/knockout-x.debug.js"></script>
 		<script type="module" src="src/testPage.js"></script>

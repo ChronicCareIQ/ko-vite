@@ -3,9 +3,6 @@
  */
 export class AutoBind
 {
-    /** @type {boolean} Flag to determine if this component should be automatically bound to the component loader's root */
-    root;
-
     /** @type {boolean} Flag to determine if component is a dialog, and to auto-bind to global dialog list */
     dialog;
 
@@ -28,7 +25,6 @@ export class AutoBind
     
     /**
      * @param [args] {object}
-     * @param [args.root] {boolean} Flag to determine if this component should be automatically bound to the component loader's root
      * @param [args.dialog] {boolean} Flag to determine if component is a dialog, and to auto-bind to global dialog list
      * @param [args.header] {boolean} Flag to determine if component is a header, and to auto-bind to headers list
      * @param [args.footer] {boolean} Flag to determine if component is a header, and to auto-bind to footers
@@ -39,7 +35,6 @@ export class AutoBind
      */
     constructor(args)
     {
-        this.root = !!args?.root;
         this.dialog = !!args?.dialog;
         this.header = !!args?.header;
         this.footer = !!args?.footer;
@@ -47,11 +42,6 @@ export class AutoBind
         this.sortIndex = args?.sortIndex ?? 0;
         this.css = args?.css;
         this.params = args?.params;
-    }
-
-    shouldAutoBind()
-    {
-        return this.root || this.dialog || this.header || this.footer;
     }
 
     /**

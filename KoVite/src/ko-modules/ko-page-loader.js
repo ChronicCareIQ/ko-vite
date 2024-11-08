@@ -137,37 +137,43 @@ export class PageLoader
     }
 
     /**
-     * Performs any automatic binding associated with passed component (if applicable, see AutoBind for details)
-     * 
-     * @param definition {ComponentDefinition}
+     * Registers an instance of a component with the loader to include in either the header, footer, or dialog collections
+     *
+     * @param component {Component} Root component to set
+     * @return {Component} Returns the component instance
      */
-    #addComponent(definition)
+    bind(component)
     {
+        let definition = component.componentDefinition;
         let autoBind = definition.autoBind;
-      
-        if (!autoBind.shouldAutoBind())
-            return;
         
-        let bindingObject = definition.createBindingObject();
-    
-        if (autoBind.root)
+        if (autoBind.dialog)
         {
-           
+            if (this.dialogs().find(x => x.name === definition.name))
+                throw `Component ${definition.name} is already bound as a dialog.`;
+            
+            this.dialogs.push(component);
         }
-        else if (autoBind.dialog && this.dialogs.find(x => x.name === bindingObject.name) === undefined)
+        else if (autoBind.header)
         {
-            this.dialogs.push(bindingObject);
-        }
-        else if (autoBind.header && this.header.find(x => x.name === bindingObject.name) === undefined)
-        {
-            this.headers.push(bindingObject);
+            if (this.headers().find(x => x.name === definition.name))
+                throw `Component ${definition.name} is already bound as a header.`;
+            
+            this.headers.push(component);
             this.headers.sort(PageLoader.sortByIndex);
         }
-        else if (autoBind.footer && this.footer.find(x => x.name === bindingObject.name) === undefined)
+        else if (autoBind.footer)
         {
-            this.footers.push(bindingObject);
+            if (this.footers().find(x => x.name === definition.name))
+                throw `Component ${definition.name} is already bound as a footer.`;
+            
+            this.footers.push(component);
             this.footers.sort(PageLoader.sortByIndex);
         }
+        else
+            throw `Component ${definition.name} is not configured to globally bind with the page-loader. Needs one of the following properties: dialog, header, or footer.`;
+
+        return component;
     }
     
     static sortByIndex(a, b)
