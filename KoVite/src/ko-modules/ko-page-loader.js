@@ -1,6 +1,7 @@
 import {ComponentDefinition} from "./ko-component-definition.js";
 import {Component} from "./ko-component.js";
 
+
 class RootModule
 {
     #params = {};
@@ -14,6 +15,40 @@ class RootModule
      * @returns {Object} Parameters to use for the root module
      */
     get params() { return this.#params; }
+}
+
+class StaticModule
+{
+    /**
+     * @type {function, Class} Class/function to register for any instance of component
+     */
+    #viewModelClass;
+    
+    #reference = ko.observable();
+
+    /**
+     * @param viewModelClass {function, Class} Class/function to register for any instance of component
+     */
+    constructor(viewModelClass)
+    {
+        this.#viewModelClass = viewModelClass;
+    }
+    
+    get reference() { return this.#reference; }
+
+    /**
+     * Gets or builds an instance of the registered class
+      * @returns {*}
+     */    
+    getInstance()
+    {
+        let instance = this.#reference();
+        if (instance) return instance;
+            
+        instance = new this.#viewModelClass();
+        this.#reference(instance);
+        return instance;
+    }
 }
 
 export class PageLoader
@@ -31,8 +66,8 @@ export class PageLoader
     /** @type {boolean} Flag to determine whether to register for Popstate events */
     #popState;
     
-    /** @type {Reference} */
-    ref;
+    /** @type {StaticModule[]} Collection of components to auto bind when `setComponentsToLoader` runs */
+    static #staticModules = [];
     
     constructor()
     {
@@ -54,7 +89,6 @@ export class PageLoader
 
     /**
      * @param options {Object}
-     * @param [options.headLess] {boolean} If true, the loader is not bound to KO
      * @param [options.verbose] {boolean} If true, verbose logging is enabled
      * @param [options.loadedCallback] {function} Callback function when all components are loaded
      * @param [options.popState] {boolean} If true, registers for popstate events
@@ -62,7 +96,6 @@ export class PageLoader
      */
     setOptions(options)
     {
-        if (options.headLess) this.ref.attached(this);      // loader isn't bound using KO
         if (typeof options.verbose !== "undefined") 
         {
             let toSet = !!options.verbose;
@@ -84,6 +117,20 @@ export class PageLoader
     }
 
     /**
+     * Registers a static component type with the page loader, which is later used during the `setComponentsToLoader` 
+     * method to automatically bind references of the component type to the loader.
+     * 
+     * @param viewModelClass
+     * @return {KnockoutObservable<*>} Returns the observable reference to the component
+     */
+    static registerStaticModule(viewModelClass)
+    {
+        let staticModule = new StaticModule(viewModelClass);
+        PageLoader.#staticModules.push(staticModule);
+        return staticModule.reference;
+    }
+
+    /**
      * Sets all global / static components to the loader. Call this method after all components have been registered.
      * @param root {Component} Root component to set
      */
@@ -98,6 +145,13 @@ export class PageLoader
 
         // Sets reference to root component
         loader.root(root);
+        
+        // Binds all static components to the loader
+        PageLoader.#staticModules.forEach(staticModule => 
+        {
+            let instance = staticModule.getInstance();
+            loader.bind(instance);
+        });        
         
         let definitions = Array.from(ComponentDefinition.componentDefinitions.values());
         definitions.forEach(definition =>
@@ -204,7 +258,7 @@ export class PageLoader
         if (this.#popState)
         {
             this.#registerPopstate();
-            this.handlePopState(null, this.getJsonFromUrl(), this.ref);
+            this.handlePopState(null, this.getJsonFromUrl());
         }
         if (PageLoader.verbose) console.log('Page popState');
     }
@@ -214,7 +268,7 @@ export class PageLoader
         window.addEventListener('popstate', event =>
         {
             let urlParams = this.getJsonFromUrl();
-            this.#handlePopState(event, urlParams, this.ref);
+            this.#handlePopState(event, urlParams);
         });
     }
 

@@ -4,7 +4,8 @@ import {PageLoader} from "./ko-modules/ko-page-loader";
 
 export class Dialog extends Component
 {
-    static instance;
+    static #instance = PageLoader.registerStaticModule(Dialog);
+    static get instance() { return Dialog.#instance(); }
 
     constructor()
     {
@@ -13,5 +14,3 @@ export class Dialog extends Component
         this.color = ko.observable('yellowgreen');
     }
 }
-
-Dialog.instance = PageLoader.instance.bind(new Dialog());
