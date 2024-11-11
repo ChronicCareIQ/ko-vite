@@ -28,16 +28,17 @@ ko.bindingProvider.instance.preprocessNode = function(node)
  */
 function transformComponent(node, key)
 {
-    let div = document.createElement("div");
+    let elementType = node.getAttribute('element') ?? 'div';
+    let componentDom = document.createElement(elementType);
     let componentBinding = `component: { name: ko.unwrap(${key}).componentName, params: ${key}}`;
     let idBinding = `attr: { 'data-component-id': ko.unwrap(${key}).componentId }`;
-    div.setAttribute('data-bind', `${componentBinding}, ${idBinding}`);
+    componentDom.setAttribute('data-bind', `${componentBinding}, ${idBinding}`);
 
     let parent = node.parentNode;
-    parent.insertBefore(div, node);
+    parent.insertBefore(componentDom, node);
     parent.removeChild(node);
 
-    return [div];
+    return [componentDom];
 }
 
 /**
@@ -80,7 +81,11 @@ function hasAttachedBinding(element)
  */
 function autoInjectAttachedBinding(node, key)
 {
-    let attachedDom = document.createElement("div");
+    let tagName = node.tagName.toLowerCase();
+    if (tagName !== 'div' && tagName !== 'span')
+        throw `The top most element of a component must be a DIV or SPAN, found: ${tagName}. This is a limitation of the auto-injecting attached binding feature. To work around this limitation, manually add an 'attached' binding to the top most element of the component.`;
+    
+    let attachedDom = document.createElement(tagName);
     attachedDom.setAttribute('data-bind', "attached: 'parent'");
     node.append(attachedDom);
     
