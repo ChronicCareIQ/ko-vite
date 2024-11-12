@@ -3,6 +3,7 @@ import {Component} from "./ko-modules/ko-component.js";
 import {ColorPanel} from "./colorPanel";
 import template from "./testPage.html?raw";
 import {NameSpan} from "./nameSpan";
+import {Mvc} from "./mvc.js";
 
 export class TestPage extends Component
 {
@@ -12,7 +13,8 @@ export class TestPage extends Component
         this.userName = ko.observable('Eric');
         
         this.myColorPanel = new ColorPanel({ color: 'Red - From JS' });
-        this.myNameSpan = new NameSpan();        
+        this.myNameSpan = new NameSpan();
+        this.mvc = new Mvc();
     }
 }
 

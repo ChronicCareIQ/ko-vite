@@ -17,3 +17,5 @@ Then open the browser at http://localhost:5173
 
 ## Usefull Links:
 - https://vite.dev/guide/assets#static-asset-handling
+- https://knockoutjs.com/documentation/component-binding.html
+- https://knockoutjs.com/documentation/binding-preprocessing.html
