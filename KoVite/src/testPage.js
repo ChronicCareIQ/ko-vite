@@ -3,6 +3,7 @@ import {Component} from "./ko-modules/ko-component.js";
 import {ColorPanel} from "./colorPanel";
 import template from "./testPage.html?raw";
 import {NameSpan} from "./nameSpan";
+import {Mvc} from "./mvc";
 
 export class TestPage extends Component
 {
