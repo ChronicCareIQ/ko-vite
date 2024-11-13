@@ -245,8 +245,8 @@ export class PageLoader
         let root = this.root();
         if (this.#loadedCallback)
             this.#loadedCallback(this);
-        else if (root && root.viewModel && typeof root.viewModel.handleOnLoaded === "function")
-            root.viewModel.handleOnLoaded(self);
+        else if (typeof root.handleOnLoaded === "function")
+            root.handleOnLoaded(self);
     
         let event = new CustomEvent('ko.page.loader:loaded', { detail: this });
         document.dispatchEvent(event);
